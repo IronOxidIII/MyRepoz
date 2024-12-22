@@ -1,80 +1,63 @@
 class Node {
     constructor(char, freq) {
-        this.char = char; // Символ
-        this.freq = freq; // Частота
-        this.left = null; // Левый дочерний узел
-        this.right = null; // Правый дочерний узел
+        this.char = char;
+        this.freq = freq;
+        this.left = null;
+        this.right = null;
     }
 }
 
-// Функция для создания дерева Хаффмана
-function buildHuffmanTree(charFreq) {
-    const nodes = [];
+function buildHuffmanTree(freqMap) {
+    const nodes = Object.entries(freqMap).map(([char, freq]) => new Node(char, freq));
+    
+    nodes.sort((a, b) => a.freq - b.freq);
 
-    // Создаем узлы для каждого символа и добавляем их в массив
-    for (const [char, freq] of Object.entries(charFreq)) {
-        nodes.push(new Node(char, freq));
-    }
-
-    // Построение дерева
     while (nodes.length > 1) {
-        // Сортируем узлы по частоте
-        nodes.sort((a, b) => a.freq - b.freq);
-
-        // Берем два узла с наименьшей частотой
         const left = nodes.shift();
         const right = nodes.shift();
-
-        // Создаем новый узел с суммой частот
-        const merged = new Node(null, left.freq + right.freq);
-        merged.left = left;
-        merged.right = right;
-
-        // Добавляем новый узел обратно в массив
-        nodes.push(merged);
+        const newNode = new Node(null, left.freq + right.freq);
+        newNode.left = left;
+        newNode.right = right;
+        nodes.push(newNode);
+        nodes.sort((a, b) => a.freq - b.freq);
     }
 
-    return nodes[0]; // Корень дерева
+    return nodes[0];
 }
 
-// Функция для генерации кодов Хаффмана
-function generateHuffmanCodes(node, prefix = '', codes = {}) {
-    if (node) {
-        if (node.char !== null) {
-            codes[node.char] = prefix; // Сохраняем код для символа
-        }
-        generateHuffmanCodes(node.left, prefix + '0', codes); // Левый дочерний узел
-        generateHuffmanCodes(node.right, prefix + '1', codes); // Правый дочерний узел
+function generateCodes(node, prefix = '', codeMap = {}) {
+    if (node === null) return;
+
+    if (node.char !== null) {
+        codeMap[node.char] = prefix;
     }
-    return codes;
+
+    generateCodes(node.left, prefix + '0', codeMap);
+    generateCodes(node.right, prefix + '1', codeMap);
+
+    return codeMap;
 }
 
-// Основная функция для кодирования строки
 function huffmanEncode(input) {
-    // Подсчитываем частоту символов
-    const charFreq = {};
+    const freqMap = {};
+
     for (const char of input) {
-        charFreq[char] = (charFreq[char] || 0) + 1;
+        freqMap[char] = (freqMap[char] || 0) + 1;
     }
 
-    // Строим дерево Хаффмана
-    const huffmanTree = buildHuffmanTree(charFreq);
+    const root = buildHuffmanTree(freqMap);
+    const codes = generateCodes(root);
 
-    // Генерируем коды Хаффмана
-    const huffmanCodes = generateHuffmanCodes(huffmanTree);
-
-    // Кодируем строку
     let encodedString = '';
     for (const char of input) {
-        encodedString += huffmanCodes[char];
+        encodedString += codes[char];
     }
 
-    return { encodedString, huffmanCodes };
+    return { codes, encodedString };
 }
 
-// Пример использования
-const inputString = "hello huffman";
-const { encodedString, huffmanCodes } = huffmanEncode(inputString);
+const inputString = "abrakadabra";
+const { codes, encodedString } = huffmanEncode(inputString);
 
-console.log("Encoded String:", encodedString);
-console.log("Huffman Codes:", huffmanCodes);
+console.log("Коды символов:", codes);
+console.log("Закодированная строка:", encodedString);
