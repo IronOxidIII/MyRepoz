@@ -49,8 +49,8 @@ function findOccurrencesWithHash(S, T) {
 
 // Пример использования
 const examples = [
-    { S: "abcabdecab", T: "cab" },
-    { S: "abababacaba", T: "aba" }
+    { S: "abccacabac", T: "cab" },
+    { S: "abacabababa", T: "aba" }
 ];
 
 // Запускаем примеры и выводим результаты
