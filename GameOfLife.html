@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game of Life</title>
+</head>
+<body>
+<h1>HTML5 Canvas - Draw a Rectangle</h1>
+
+<canvas id="myCanvas" width="300" height="300" style="border: 1px solid black;">
+    Sorry, your browser does not support canvas.
+</canvas>
+<br>
+<button id="startButton" style="background-color: #000000; color: white;">
+    Start
+</button>
+<button id="stopButton" style="background-color: #000000; color: white;">
+    Stop
+</button>
+
+<script>
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+    let cellSize = 30;
+    let fieldSize = 30;
+    let currentField = new Array(fieldSize);
+    let nextField = new Array(fieldSize);
+    let tm; // Таймер для интервала
+    let canvasRect = canvas.getBoundingClientRect();
+
+    for (let i = 0; i < fieldSize; i++){
+        nextField[i] = new Array(fieldSize);
+        currentField[i] = new Array(fieldSize);
+    }
+
+    function init(){
+        // Инициализация поля (если нужно)
+    }
+
+    function neighborCount(r,c){ //количество соседей
+        let sum = 0;
+        for (let i = -1; i <= 1; i++){
+            for (let j = -1; j <= 1; j++){
+                sum += currentField[(r + i + fieldSize)%fieldSize][(c + j + fieldSize)%fieldSize];  //значение клетки
+            }
+        }
+        sum -= currentField[r][c];
+        return sum;
+    }
+
+    function makeStep(){
+        for (let i = 0; i < fieldSize; i++){
+            for (let j = 0; j < fieldSize; j++){
+                let nbs = neighborCount(i, j);
+                if (((currentField[i][j] === 0) && (nbs === 3)) || ((currentField[i][j] === 1) && ((nbs === 2) || (nbs === 3)))){
+                    nextField[i][j] = 1;
+                }
+                else {
+                    nextField[i][j] = 0;
+                }
+            }
+        }
+        for (let i = 0; i<fieldSize; i++){
+            for (let j = 0; j<fieldSize; j++){
+                currentField[i][j] = nextField[i][j];
+            }
+        }
+    }
+
+    function draw(){
+        for (let i = 0; i < fieldSize; i++){
+            for (let j = 0; j < fieldSize; j++){
+                ctx.fillStyle = currentField[i][j] === 0 ? "White" : "Red";
+                ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize); //прямоугольник
+                ctx.strokeStyle = "DarkBlue";
+                ctx.strokeRect(j * cellSize, i * cellSize, cellSize, cellSize);
+            }
+        }
+    }
+
+    function go(){
+        makeStep();
+        draw();
+    }
+
+    function mClick(click) {
+        let x = Math.floor((click.clientX - canvasRect.left) / cellSize); //ось ординат
+        let y = Math.floor((click.clientY - canvasRect.top) / cellSize);  // ось абсцисс
+        currentField[y][x] = 1;
+        draw();
+    }
+
+    canvas.addEventListener("click", mClick); // добавление обработчика события для клика по холсту
+
+    function randomizeField() { //заполнение по "Старту"
+        for (let i = 0; i < fieldSize; i++) {
+            for (let j = 0; j < fieldSize; j++) {
+                currentField[i][j] = Math.random() > 0.7 ? 1 : 0;
+            }
+        }
+        draw();
+    }
+
+    // Обработчик события для кнопки "Start"
+    document.getElementById("startButton").addEventListener("click", () => {
+        randomizeField();
+        if (!tm) {
+            tm = setInterval(go, 250); // Запуск таймера
+        }
+    });
+
+    // Обработчик события для кнопки "Stop"
+    document.getElementById("stopButton").addEventListener("click", () => {
+        clearInterval(tm); // Остановка таймера
+        tm = null; // Сброс таймера
+    });
+
+    draw();
+    init();
+</script>
+</body>
+</html>
