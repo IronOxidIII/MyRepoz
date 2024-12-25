@@ -1,0 +1,144 @@
+Структура HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game of Life</title>
+</head>
+<body>
+<h1>HTML5 Canvas - Draw a Rectangle</h1>
+<!DOCTYPE html>: Определяет тип документа как HTML5.
+<html>: Начало HTML-документа.
+<head>: Содержит метаданные о документе, такие как заголовок.
+<title>: Устанавливает заголовок страницы, который отображается на вкладке браузера.
+<body>: Содержит содержимое страницы, включая заголовок и элементы управления.
+Элементы управления и холст
+<canvas id="myCanvas" width="300" height="300" style="border: 1px solid black;">
+    Sorry, your browser does not support canvas.
+</canvas>
+<br>
+<button id="startButton" style="background-color: #000000; color: white;">
+    Start
+</button>
+<button id="stopButton" style="background-color: #000000; color: white;">
+    Stop
+</button>
+<canvas>: Создает область для рисования с заданной шириной и высотой. Если браузер не поддерживает <canvas>, отображается текст.
+<button>: Создает кнопки "Start" и "Stop", которые запускают и останавливают игру соответственно.
+JavaScript
+<script>
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+const canvas = document.getElementById("myCanvas");: Получает элемент <canvas> по его ID.
+const ctx = canvas.getContext("2d");: Получает контекст рисования в 2D, который позволяет рисовать на холсте.
+Инициализация переменных
+    let cellSize = 30;
+    let fieldSize = 30;
+    let currentField = new Array(fieldSize);
+    let nextField = new Array(fieldSize);
+    let tm; // Таймер для интервала
+    let canvasRect = canvas.getBoundingClientRect();
+cellSize и fieldSize: Определяют размер клетки и размер поля (количество клеток).
+currentField и nextField: Двумерные массивы для текущего и следующего состояния клеток.
+tm: Переменная для хранения идентификатора таймера.
+canvasRect: Получает размеры холста для обработки кликов.
+Инициализация полей
+    for (let i = 0; i < fieldSize; i++){
+        nextField[i] = new Array(fieldSize);
+        currentField[i] = new Array(fieldSize);
+    }
+Создает двумерные массивы для текущего и следующего состояния клеток.
+Функция neighborCount
+    function neighborCount(r,c){ //количество соседей
+        let sum = 0;
+        for (let i = -1; i <= 1; i++){
+            for (let j = -1; j <= 1; j++){
+                sum += currentField[(r + i + fieldSize)%fieldSize][(c + j + fieldSize)%fieldSize];  //значение клетки
+            }
+        }
+        sum -= currentField[r][c];
+        return sum;
+    }
+Подсчитывает количество живых соседей для клетки в позиции (r,c).
+Использует модульную арифметику для учета границ поля (периодическая граница).
+Функция makeStep
+    function makeStep(){
+        for (let i = 0; i < fieldSize; i++){
+            for (let j = 0; j < fieldSize; j++){
+                let nbs = neighborCount(i, j);
+                if (((currentField[i][j] === 0) && (nbs === 3)) || ((currentField[i][j] === 1) && ((nbs === 2) || (nbs === 3)))){
+                    nextField[i][j] = 1;
+                }
+                else {
+                    nextField[i][j] = 0;
+                }
+            }
+        }
+        for (let i = 0; i<fieldSize; i++){
+            for (let j = 0; j<fieldSize; j++){
+                currentField[i][j] = nextField[i][j];
+            }
+        }
+    }
+Обновляет состояние клеток на основе правил игры:
+Клетка умирает или рождается в зависимости от количества живых соседей.
+Обновляет текущее поле на основе следующего состояния.
+Функция draw
+    function draw(){
+        for (let i = 0; i < fieldSize; i++){
+            for (let j = 0; j < fieldSize; j++){
+                ctx.fillStyle = currentField[i][j] === 0 ? "White" : "Red";
+                ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize); //прямоугольник
+                ctx.strokeStyle = "DarkBlue";
+                ctx.strokeRect(j * cellSize, i * cellSize, cellSize, cellSize);
+            }
+        }
+    }
+Отрисовывает текущее состояние клеток на холсте:
+Живые клетки окрашиваются в красный цвет, мертвые — в белый.
+Рисует контуры клеток темно-синим цветом.
+Функция go
+    function go(){
+        makeStep();
+        draw();
+    }
+Выполняет один шаг игры и обновляет отображение.
+Обработка кликов
+    function mClick(click) {
+        let x = Math.floor((click.clientX - canvasRect.left) / cellSize); //ось ординат
+        let y = Math.floor((click.clientY - canvasRect.top) / cellSize);  // ось абсцисс
+        currentField[y][x] = 1;
+        draw();
+    }
+
+    canvas.addEventListener("click", mClick); // добавление обработчика события для клика по холсту
+Обрабатывает клики по холсту, устанавливая клетки в состояние «живой» при нажатии.
+Функция randomizeField
+    function randomizeField() { //заполнение по "Старту"
+        for (let i = 0; i < fieldSize; i++) {
+            for (let j = 0; j < fieldSize; j++) {
+                currentField[i][j] = Math.random() > 0.7 ? 1 : 0;
+            }
+        }
+        draw();
+    }
+Заполняет поле случайными значениями при запуске игры.
+Обработчики событий для кнопок
+    document.getElementById("startButton").addEventListener("click", () => {
+        randomizeField();
+        if (!tm) {
+            tm = setInterval(go, 250); // Запуск таймера
+        }
+    });
+
+    document.getElementById("stopButton").addEventListener("click", () => {
+        clearInterval(tm); // Остановка таймера
+        tm = null; // Сброс таймера
+    });
+Запускает игру при нажатии кнопки "Start", случайным образом заполняя поле и начиная обновления с интервалом в 250 мс.
+Останавливает игру при нажатии кнопки "Stop".
+Инициализация и отрисовка
+    draw();
+    init();
+</script>
+Первоначально отрисовывает поле и вызывает функцию init, которая может быть использована для дальнейшей настройки (в данном коде она не реализована).
+Таким образом, данный код создает простую реализацию игры "Жизнь" с возможностью взаимодействия через клики мыши и управления с помощью кнопок.
