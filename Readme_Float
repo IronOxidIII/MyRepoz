@@ -1,0 +1,137 @@
+Преобразование из IEEE 754 в десятичное число
+Функция ieee754ToDecimal
+function ieee754ToDecimal(binary) {
+    const sign = binary.charAt(0) === '1' ? -1 : 1;
+    const exponent = parseInt(binary.slice(1, 9), 2) - 127;  // смещение на 127
+    let mantissa = 1;  // Ведущая единица
+sign: Определяет знак числа. Если первый бит равен '1', число отрицательное.
+exponent: Извлекает биты экспоненты (биты с 1 по 8) и вычитает смещение (127).
+mantissa: Начинаем с 1, так как в нормализованных числах перед мантиссой всегда стоит единица.
+Извлечение мантиссы
+    for (let i = 0; i < 23; i++) {
+        if (binary.charAt(9 + i) === '1') {
+            mantissa += Math.pow(2, -(i + 1));
+        }
+    }
+Цикл проходит по следующим 23 битам, добавляя значения к мантиссе, если соответствующий бит равен '1'.
+Возвращение значения
+    return sign * mantissa * Math.pow(2, exponent);
+}
+Возвращает итоговое значение числа в десятичной системе, умножая мантиссу на 
+2^exponent
+2^exponent
+  и учитывая знак.
+Преобразование из десятичного числа в IEEE 754
+Функция decimalToIEEE754
+function decimalToIEEE754(num) {
+    const isNegative = num < 0;
+    num = Math.abs(num);
+Определяет, является ли число отрицательным, и берет его абсолютное значение для дальнейших вычислений.
+Нормализация числа
+    let exponent = 0;
+    let mantissa = num;
+
+    while (mantissa >= 2) {
+        mantissa /= 2;
+        exponent++;
+    }
+    while (mantissa < 1 && mantissa > 0) {
+        mantissa *= 2;
+        exponent--;
+    }
+Нормализует число так, чтобы оно находилось в диапазоне [1.0, 2.0). При этом корректируется экспонента.
+Смещение экспоненты
+    const exponentWithBias = exponent + 127;
+Добавляет смещение к экспоненте для представления в формате IEEE 754.
+Извлечение мантиссы
+    let mantissaBinary = mantissa - 1;
+    let mantissaBits = '';
+    for (let i = 0; i < 23; i++) {
+        mantissaBinary *= 2;
+        const bit = Math.floor(mantissaBinary);
+        mantissaBits += bit.toString();
+        mantissaBinary -= bit;
+        if (mantissaBinary === 0) break;
+    }
+Вычисляет биты мантиссы. Умножает мантиссу на 2 и извлекает целую часть для формирования двоичного представления.
+Формирование итогового представления
+    mantissaBits = mantissaBits.slice(0, 23);
+    
+    const signBit = isNegative ? '1' : '0';
+    const exponentBits = exponentWithBias.toString(2).padStart(8, '0');
+    const mantissaPadded = mantissaBits.padEnd(23, '0');
+
+    return signBit + exponentBits + mantissaPadded;
+}
+Собирает итоговое представление числа в формате IEEE 754: знак, экспонента и мантисса.
+Сложение чисел в формате IEEE 754
+Функция addIEEE754
+function addIEEE754(num1, num2) {
+    const decimal1 = ieee754ToDecimal(num1);
+    const decimal2 = ieee754ToDecimal(num2);
+Преобразует два числа из формата IEEE 754 в десятичный.
+Нормализация чисел
+    let [mantissa1, exp1] = normalizeNumber(decimal1);
+    let [mantissa2, exp2] = normalizeNumber(decimal2);
+Нормализует оба числа для последующего сложения.
+Выравнивание мантисс
+    if (exp1 > exp2) {
+        mantissa2 /= Math.pow(2, exp1 - exp2);
+        exp2 = exp1;
+    } else if (exp2 > exp1) {
+        mantissa1 /= Math.pow(2, exp2 - exp1);
+        exp1 = exp2;
+    }
+Приводит мантиссы к одному порядку для сложения.
+Сложение мантисс
+    let sumMantissa = mantissa1 + mantissa2;
+
+    let sumExp = exp1;
+    if (sumMantissa >= 2) {
+        sumMantissa /= 2;
+        sumExp += 1;
+    }
+Складывает мантиссы и корректирует порядок при необходимости.
+Преобразование результата обратно в IEEE 754
+    const ieee754Result = decimalToIEEE754(sumMantissa * Math.pow(2, sumExp));
+    
+    const decimalResult = sumMantissa * Math.pow(2, sumExp);
+    console.log("Сумма в десятичном виде: " + decimalResult);
+    console.log("Сумма в формате IEEE 754: " + ieee754Result);
+
+    return ieee754Result;
+}
+Преобразует сумму обратно в формат IEEE 754 и выводит результат.
+Нормализация числа
+Функция normalizeNumber
+function normalizeNumber(num) {
+    let exponent = 0;
+    let mantissa = num;
+
+    while (mantissa >= 2) {
+        mantissa /= 2;
+        exponent++;
+    }
+    while (mantissa < 1 && mantissa > 0) {
+        mantissa *= 2;
+        exponent--;
+    }
+
+    return [mantissa, exponent];
+}
+Нормализует число до вида 
+1.xxx×2^n, возвращая мантиссу и её порядок.
+Пример использования
+Вызовы функций для проверки работы кода:
+console.log(decimalToIEEE754(13));      // Пример вывода для проверки
+console.log(decimalToIEEE754(-6.75));
+console.log(decimalToIEEE754(0.15625));
+console.log(decimalToIEEE754(1));
+console.log(decimalToIEEE754(0.2));
+console.log(decimalToIEEE754(17));
+
+const num1 = '01000001100010000000000000000000'; // IEEE для числа 17
+const num2 = '01000001101100000000000000000000'; // IEEE для числа 22
+
+const result = addIEEE754(num1, num2); // Сложение двух чисел в формате IEEE 
+Этот код демонстрирует полный процесс преобразования между десятичной системой и форматом IEEE 754 с возможностью сложения чисел.
